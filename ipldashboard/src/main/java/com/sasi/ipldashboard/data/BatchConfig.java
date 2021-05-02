@@ -27,7 +27,7 @@ public class BatchConfig {
 
     private final String[] FIELD_NAMES = new String[] { "id", "city", "date", "player_of_match", "venue,neutral_venue",
 	    "team1", "team2", "toss_winner", "toss_decision", "winner", "result", "result_margin", "eliminator",
-	    "method", "umpire1", "umpire2" };
+	    "umpire1", "umpire2" };
 
     @Autowired
     public JobBuilderFactory jobBuilderFactory;
@@ -37,7 +37,7 @@ public class BatchConfig {
 
     @Bean
     public FlatFileItemReader<MatchInput> reader() {
-	return new FlatFileItemReaderBuilder<MatchInput>().name("personItemReader")
+	return new FlatFileItemReaderBuilder<MatchInput>().name("MatchItemReader")
 		.resource(new ClassPathResource("match-data.csv")).delimited().names(FIELD_NAMES)
 		.fieldSetMapper(new BeanWrapperFieldSetMapper<MatchInput>() {
 		    {
@@ -59,25 +59,17 @@ public class BatchConfig {
 			+ " VALUES (:id, :city, :date, :playerOfMatch, :venue, :team1, :team2, :tossWinner, :tossDecision, :matchWinner, :result, :resultMargin, :umpire1, :umpire2)")
 		.dataSource(dataSource).build();
     }
-    
+
     @Bean
     public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
-      return jobBuilderFactory.get("importUserJob")
-        .incrementer(new RunIdIncrementer())
-        .listener(listener)
-        .flow(step1)
-        .end()
-        .build();
+	return jobBuilderFactory.get("importUserJob").incrementer(new RunIdIncrementer()).listener(listener).flow(step1)
+		.end().build();
     }
 
     @Bean
     public Step step1(JdbcBatchItemWriter<Match> writer) {
-      return stepBuilderFactory.get("step1")
-        .<MatchInput, Match> chunk(10)
-        .reader(reader())
-        .processor(processor())
-        .writer(writer)
-        .build();
+	return stepBuilderFactory.get("step1").<MatchInput, Match>chunk(10).reader(reader()).processor(processor())
+		.writer(writer).build();
     }
 
 }
